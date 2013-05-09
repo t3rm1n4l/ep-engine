@@ -98,7 +98,7 @@ public:
     LookupCallback(EventuallyPersistentEngine *e, const void* c) :
         engine(e), cookie(c) {}
 
-    virtual void callback(GetValue &value);
+    virtual bool callback(GetValue &value);
 private:
     EventuallyPersistentEngine *engine;
     const void *cookie;

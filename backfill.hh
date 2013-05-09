@@ -28,6 +28,7 @@
 
 #define DEFAULT_BACKFILL_RESIDENT_THRESHOLD 0.9
 #define MINIMUM_BACKFILL_RESIDENT_THRESHOLD 0.7
+#define BACKFILL_MAX_LIST_SIZE 1000
 
 /**
  * Dispatcher callback responsible for bulk backfilling tap queues
@@ -46,11 +47,13 @@ public:
         vbucket_version = engine->getEpStore()->getVBucketVersion(vbucket);
     }
 
-    void callback(GetValue &gv);
+    bool callback(GetValue &gv);
 
     bool callback(Dispatcher &, TaskId);
 
     std::string description();
+
+    static void setMaxListSize(size_t maxListSize);
 
 private:
     const std::string           name;
@@ -63,6 +66,7 @@ private:
     uint64_t                    sessionID;
     int                         kvId;
     bool                        forceVBDump;
+    static size_t               backfillMaxListSize;
 };
 
 /**

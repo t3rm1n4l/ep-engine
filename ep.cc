@@ -1929,7 +1929,7 @@ public:
     }
 
     // This callback is invoked for set only.
-    void callback(mutation_result &value) {
+    bool callback(mutation_result &value) {
         if (value.first == 1) {
             if (value.second > 0) {
                 ++stats->newItems;
@@ -1987,6 +1987,7 @@ public:
                 redirty();
             }
         }
+        return true;
     }
 
     // This callback is invoked for deletions only.
@@ -1998,10 +1999,10 @@ public:
     //  Failures that should never happen:
     //      > 1 would be bad.  We were only trying to delete one row.
     //      0 means we did not delete a row, but did not fail (did not exist)
-    void callback(int &rowsAffected) {
+    bool callback(int &rowsAffected) {
         if (rowsAffected < 0) {
             rejectList->push_back(*flushEntry);
-            return;
+            return true;
         }
 
         assert(rowsAffected == 1);
@@ -2023,6 +2024,7 @@ public:
                 redirty();
             }
         }
+        return true;
     }
 
 private:
@@ -2606,14 +2608,14 @@ void LoadStorageKVPairCallback::initVBucket(uint16_t vbid,
     vbuckets.setPersistenceCheckpointId(vbid, checkpointId - 1);
 }
 
-void LoadStorageKVPairCallback::callback(GetValue &val) {
+bool LoadStorageKVPairCallback::callback(GetValue &val) {
     Item *i = val.getValue();
     if (i != NULL) {
         uint16_t vb_version = vbuckets.getBucketVersion(i->getVBucketId());
         if (vb_version != static_cast<uint16_t>(-1) && val.getVBucketVersion() != vb_version) {
             epstore->getInvalidItemDbPager()->addInvalidItem(i, val.getVBucketVersion());
             delete i;
-            return;
+            return true;
         }
 
         RCPtr<VBucket> vb = vbuckets.getBucket(i->getVBucketId());
@@ -2680,6 +2682,7 @@ void LoadStorageKVPairCallback::callback(GetValue &val) {
         delete i;
     }
     ++stats.warmedUp;
+    return true;
 }
 
 bool LoadStorageKVPairCallback::shouldBeResident() {

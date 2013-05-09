@@ -66,13 +66,14 @@ static inline EventuallyPersistentEngine* getHandle(ENGINE_HANDLE* handle)
     return ret;
 }
 
-void LookupCallback::callback(GetValue &value) {
+bool LookupCallback::callback(GetValue &value) {
     if (value.getStatus() == ENGINE_SUCCESS) {
         engine->addLookupResult(cookie, value.getValue());
     } else {
         engine->addLookupResult(cookie, NULL);
     }
     engine->notifyIOComplete(cookie, value.getStatus());
+    return true;
 }
 
 template <typename T>
@@ -466,6 +467,14 @@ extern "C" {
                     *msg = "Unable to complete restore mode";
                     rv = PROTOCOL_BINARY_RESPONSE_EINVAL;
                }
+            } else if (strcmp(keyz, "bf_max_list_size") == 0) {
+                char *ptr = NULL;
+                // TODO:  This parser isn't perfect.
+                uint64_t vsize = strtoull(valz, &ptr, 10);
+                validate(vsize, static_cast<uint64_t>(0),
+                         std::numeric_limits<uint64_t>::max());
+                getLogger()->log(EXTENSION_LOG_DEBUG, NULL, "Setting bf_max_list_size to %d via flush params.", vsize);
+                BackfillDiskLoad::setMaxListSize((size_t)vsize);
             } else {
                 *msg = "Unknown config param";
                 rv = PROTOCOL_BINARY_RESPONSE_KEY_ENOENT;
@@ -1282,6 +1291,7 @@ the database (refer docs): dbname, shardpattern, initfile, postInitfile, db_shar
     CheckpointManager::keepClosedCheckpointsUnderHighWat(configuration.isKeepClosedChks());
 
     BackFillVisitor::setResidentItemThreshold(configuration.getBfResidentThreshold());
+    BackfillDiskLoad::setMaxListSize(configuration.getBfMaxListSize());
 
     HashTable::setDefaultNumBuckets(configuration.getHtSize());
     HashTable::setDefaultNumLocks(configuration.getHtLocks());

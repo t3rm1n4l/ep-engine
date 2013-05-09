@@ -91,7 +91,7 @@ public:
     /**
      * Method called on callback.
      */
-    virtual void callback(RV &value) = 0;
+    virtual bool callback(RV &value) = 0;
 
     virtual void setStatus(int status) {
         myStatus = status;
@@ -127,11 +127,12 @@ public:
     /**
      * The callback implementation -- just store a value.
      */
-    void callback(T &value) {
+    bool callback(T &value) {
         LockHolder lh(so);
         val = value;
         fired = true;
         so.notify();
+        return true;
     }
 
     /**
