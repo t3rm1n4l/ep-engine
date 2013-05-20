@@ -116,7 +116,7 @@ public:
 
     void complete(void);
 
-    static void setResidentItemThreshold(double residentThreshold);
+    static bool setResidentItemThreshold(double residentThreshold);
 
 private:
 
