@@ -377,8 +377,10 @@ EventuallyPersistentStore::EventuallyPersistentStore(EventuallyPersistentEngine 
 
     dispatcher = new Dispatcher *[numKVStores];
     roDispatcher = new Dispatcher *[numKVStores];
+    roBackfillDispatcher = new Dispatcher *[numKVStores];
     rwUnderlying = new KVStore *[numKVStores];
     roUnderlying = new KVStore *[numKVStores];
+    roBackfillUnderlying = new KVStore *[numKVStores];
     flusher = new Flusher *[numKVStores];
     tctx = new TransactionContext *[numKVStores];
     storageProperties = new StorageProperties *[numKVStores];
@@ -408,11 +410,16 @@ EventuallyPersistentStore::EventuallyPersistentStore(EventuallyPersistentEngine 
             && storageProperties[i]->maxReaders() > 1
             && concurrentDB) {
             roUnderlying[i] = engine.newKVStore(it->second);
+            roBackfillUnderlying[i] = engine.newKVStore(it->second);
             roDispatcher[i] = new Dispatcher(theEngine);
             roDispatcher[i]->start();
+            roBackfillDispatcher[i] = new Dispatcher(theEngine);
+            roBackfillDispatcher[i]->start();
         } else {
             roUnderlying[i] = rwUnderlying[i];
+            roBackfillUnderlying[i] = rwUnderlying[i];
             roDispatcher[i]= dispatcher[i];
+            roBackfillDispatcher[i] = dispatcher[i];
         }
 
         int nshards = rwUnderlying[i]->getNumShards();
@@ -446,6 +453,7 @@ EventuallyPersistentStore::EventuallyPersistentStore(EventuallyPersistentEngine 
     startNonIODispatcher();
     assert(rwUnderlying);
     assert(roUnderlying);
+    assert(roBackfillUnderlying);
 }
 
 /**
@@ -469,7 +477,9 @@ EventuallyPersistentStore::~EventuallyPersistentStore() {
         if (hasSeparateRODispatcher(i)) {
             roDispatcher[i]->stop(forceShutdown);
             delete roDispatcher[i];
+            delete roBackfillDispatcher[i];
             delete roUnderlying[i];
+            delete roBackfillUnderlying[i];
         }
         delete flusher[i];
         delete dispatcher[i];
@@ -483,7 +493,9 @@ EventuallyPersistentStore::~EventuallyPersistentStore() {
     delete []dispatcher;
     delete []tctx;
     delete []roUnderlying;
+    delete []roBackfillUnderlying;
     delete []roDispatcher;
+    delete []roBackfillDispatcher;
 
     delete nonIODispatcher;
     KVStoreMapper::destroy();
@@ -499,7 +511,7 @@ void EventuallyPersistentStore::startNonIODispatcher() {
     nonIODispatcher->start();
 }
 
-const Flusher* EventuallyPersistentStore::getFlusher(int id) {
+Flusher* EventuallyPersistentStore::getFlusher(int id) {
     return flusher[id];
 }
 
@@ -2826,3 +2838,19 @@ void EventuallyPersistentStore::queueFlusher(RCPtr<VBucket> vb, StoredValue *v, 
     flushLists->push(kvid, shard, *fe);
 }
 
+void EventuallyPersistentStore::getFlushItems(std::list<Item*>& flushItems, int kvId) {
+    Flusher *fl = getFlusher(kvId);
+
+    // Pause flusher
+    fl->pause();
+    fl->wait(paused);
+
+    // Get flush list, reject list and helper items from flusher
+    fl->retrievePendingItems(flushItems);
+
+    // Get flushList items from epstore
+    flushLists->getCopy(flushItems, kvId);
+
+    // Resume flusher
+    fl->resume();
+}

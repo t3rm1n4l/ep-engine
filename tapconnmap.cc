@@ -260,7 +260,7 @@ TapProducer *TapConnMap::newProducer(const void* cookie,
                                      uint64_t backfillAge,
                                      int tapKeepAlive) {
     LockHolder clh(connMapMutex);
-    TapProducer *tap(NULL);
+    TapProducer *tap(NULL), *oldTap(NULL);
 
     std::list<TapConnection*>::iterator iter;
     for (iter = all.begin(); iter != all.end(); ++iter) {
@@ -292,6 +292,7 @@ TapProducer *TapConnMap::newProducer(const void* cookie,
             tap->setName(TapConnection::getAnonName());
             tap->setDisconnect(true);
             tap->paused = true;
+            oldTap = tap;
             tap = NULL;
         } else {
             getLogger()->log(EXTENSION_LOG_INFO, NULL,
@@ -317,6 +318,9 @@ TapProducer *TapConnMap::newProducer(const void* cookie,
         tap = new TapProducer(engine, cookie, name, flags);
         tap->setSessionID((uint64_t) cookie);
         addSession(name, (uint64_t) cookie);
+        if (oldTap != NULL) {
+            oldTap->transferItems(tap->backfilledItems);
+        }
         all.push_back(tap);
     } else {
         if (tap->isReserved()) {

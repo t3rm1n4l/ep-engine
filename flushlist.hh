@@ -44,6 +44,7 @@ public:
     }
     StoredValue * getStoredValue () const { return v; }
     uint16_t getVBucketId() const {return vbId; }
+    uint16_t getVBVersion() const { return vbVersion; }
 
     StoredValue *v;
     uint16_t vbId;
@@ -74,10 +75,12 @@ class FlushLists {
         FlushLists(EventuallyPersistentStore *eps, int nKVS, int maxShrds) : epStore(eps), numKVStores(nKVS), maxShards(maxShrds) {
             assert(numKVStores > 0 && maxShards > 0);
             flushLists = new AtomicFlushList[numKVStores*maxShards];
+            shardList = new FlushList[numKVStores];
         }
 
         ~FlushLists() {
             delete[] flushLists;
+            delete[] shardList;
         }
 
         void push(int kvId, int shardId, FlushEntry &flushEntry) {
@@ -86,6 +89,8 @@ class FlushLists {
         }
 
         void get(FlushList& out, int kvId);
+
+        void getCopy(std::list<Item*> &out, int kvId);
 
         size_t size() {
             size_t s = 0;
@@ -100,24 +105,25 @@ class FlushLists {
             for (int i = 0; i < maxShards; i++) {
                 s += size(kvId, i);
             }
-            return s;
+            return s + shardList[kvId].size();
         }
+
+        bool empty(int kvId) {
+            return 0 == size(kvId);
+        }
+
+    private:
 
         size_t size(int kvId, int shardId) {
             assert(flushLists != NULL);
             return flushLists[kvId*maxShards+shardId].size();
         }
 
-        bool empty(int kvId) {
-            return 0 == size(kvId);
-        }
-        
-
-    private:
         EventuallyPersistentStore *epStore;
         int numKVStores;
         int maxShards;
         AtomicFlushList* flushLists;
+        FlushList* shardList; // temporary list
 };
 
 #endif /* __FLUSHLIST_HH__ */
