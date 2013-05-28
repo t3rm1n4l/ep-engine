@@ -688,7 +688,8 @@ private:
             markClean(NULL);
         }
 
-        increaseCacheSize(ht, size());
+        increaseCacheSize(ht, size(), true);
+        increaseCacheSize(ht, totalSize(), false, true);
         increaseCurrentSize(stats, size() - value->length());
     }
 
