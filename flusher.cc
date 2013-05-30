@@ -302,7 +302,7 @@ int Flusher::doFlush() {
     return flushRv;
 }
 
-void Flusher::retrievePendingItems(std::list<Item*> &out) const {
+void Flusher::retrievePendingItems(std::list<queued_item> &out) const {
     if (flushList) {
         store->copyItemsFromFlushList(*flushList, out);
     }
@@ -343,7 +343,7 @@ void FlusherHelper::run() {
     return;
 }
 
-void FlusherHelper::retrievePendingItems(std::list<Item*> &out) {
+void FlusherHelper::retrievePendingItems(std::list<queued_item> &out) {
     LockHolder lh(sync);
     if (flushList) {
         store->copyItemsFromFlushList(*flushList, out);
