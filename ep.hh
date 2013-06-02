@@ -61,6 +61,10 @@ extern EXTENSION_LOGGER_DESCRIPTOR *getLogger(void);
 #define MAX_BG_FETCH_DELAY 900
 #define MAX_COMMIT_RETRIES 30
 
+// To be set with different bits each
+#define FLUSHER_FLAG_FLUSHPARAM    0x01
+#define FLUSHER_FLAG_RETRIEVEITEMS 0x02
+
 /**
  * vbucket-aware hashtable visitor.
  */
@@ -628,6 +632,8 @@ public:
 
     bool pauseFlusher(void);
     bool resumeFlusher(void);
+    bool pauseFlusher(int kvId);
+    bool resumeFlusher(int kvId);
 
     /**
      * Enqueue a background fetch for a key.

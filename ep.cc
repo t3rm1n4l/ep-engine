@@ -532,16 +532,26 @@ void EventuallyPersistentStore::stopFlusher() {
 
 bool EventuallyPersistentStore::pauseFlusher() {
     for (int i = 0 ; i < numKVStores; ++i) {
-        tctx[i]->commitSoon();
-        flusher[i]->pause();
+        pauseFlusher(i);
     }
     return true;
 }
 
 bool EventuallyPersistentStore::resumeFlusher() {
     for (int i = 0 ; i < numKVStores; ++i) {
-        flusher[i]->resume();
+        resumeFlusher(i);
     }
+    return true;
+}
+
+bool EventuallyPersistentStore::pauseFlusher(int kvId) {
+    tctx[kvId]->commitSoon();
+    flusher[kvId]->pause(FLUSHER_FLAG_FLUSHPARAM);
+    return true;
+}
+
+bool EventuallyPersistentStore::resumeFlusher(int kvId) {
+    flusher[kvId]->resume(FLUSHER_FLAG_FLUSHPARAM);
     return true;
 }
 
@@ -2845,7 +2855,7 @@ void EventuallyPersistentStore::getFlushItems(std::list<queued_item>& flushItems
     Flusher *fl = getFlusher(kvId);
 
     // Pause flusher
-    fl->pause();
+    fl->pause(FLUSHER_FLAG_RETRIEVEITEMS);
     fl->wait(paused);
 
     // Get flush list, reject list and helper items from flusher
@@ -2855,5 +2865,5 @@ void EventuallyPersistentStore::getFlushItems(std::list<queued_item>& flushItems
     flushLists->getCopy(flushItems, kvId);
 
     // Resume flusher
-    fl->resume();
+    fl->resume(FLUSHER_FLAG_RETRIEVEITEMS);
 }
