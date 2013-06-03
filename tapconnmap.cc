@@ -691,7 +691,7 @@ void CompleteDiskBackfillTapOperation::perform(TapProducer *tc, void *) {
 }
 
 void ScheduleDiskBackfillTapOperation::perform(TapProducer *tc, void *) {
-    tc->scheduleDiskBackfill();
+    tc->scheduleDiskBackfill(count);
 }
 
 void ReceivedItemTapOperation::perform(TapProducer *tc, Item *arg) {
