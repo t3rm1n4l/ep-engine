@@ -55,6 +55,16 @@ public:
 
     static void setMaxListSize(size_t maxListSize);
 
+    static size_t getMaxListSize();
+
+    static void setKvSleepTime(size_t sleepTime);
+
+    static size_t getKvSleepTime();
+
+    static void setKvSleepEnable(int kvId, bool enable);
+
+    static bool isKvSleepEnabled(int kvId);
+
 private:
     const std::string           name;
     EventuallyPersistentEngine *engine;
@@ -67,6 +77,8 @@ private:
     int                         kvId;
     bool                        forceVBDump;
     static size_t               backfillMaxListSize;
+    static size_t               kvSleepTime;
+    static std::set<int>        kvSleepEnable; // Use set to avoid constructing a static array based on numKVStores
 };
 
 /**
