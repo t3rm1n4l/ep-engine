@@ -823,7 +823,7 @@ public:
             epe->notifyIOComplete(cookie, ENGINE_DISCONNECT);
             return false;
         }
-        epstore->getROUnderlying(kvid)->get(key, rowid, vbucket, vbver, gcb);
+        epstore->getROBackfillUnderlying(kvid)->get(key, rowid, vbucket, vbver, gcb);
         gcb.waitForValue();
         assert(gcb.fired);
 
@@ -907,7 +907,7 @@ void TapProducer::queueBGFetch(const std::string &key, uint64_t id,
         engine.notifyIOComplete(cookie, ENGINE_DISCONNECT);
         return;
     }
-    engine.getEpStore()->getRODispatcher(kvid)->schedule(dcb, NULL, Priority::TapBgFetcherPriority);
+    engine.getEpStore()->getROBackfillDispatcher(kvid)->schedule(dcb, NULL, Priority::TapBgFetcherPriority);
     ++bgQueued;
     ++bgJobIssued;
     assert(!empty_UNLOCKED());

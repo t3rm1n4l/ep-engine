@@ -157,7 +157,8 @@ bool BackFillVisitor::visitBucket(RCPtr<VBucket> vb) {
             }
             if (useDiskBackfill) {
                 vbuckets.push_back(vb->getId());
-                ScheduleDiskBackfillTapOperation tapop(endId - beginId);
+                int count = kvId >= 0? kvId : engine->getEpStore()->numKVStores;
+                ScheduleDiskBackfillTapOperation tapop(count);
                 engine->tapConnMap.performTapOp(name, sessionID, tapop, static_cast<void*>(NULL));
                 res = false; // Don't need a hashtable walk for this vbucket
             }
