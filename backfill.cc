@@ -23,6 +23,7 @@
 #include "kvstore-mapper.hh"
 
 double BackFillVisitor::backfillResidentThreshold = DEFAULT_BACKFILL_RESIDENT_THRESHOLD;
+size_t BackFillVisitor::backfillNumKeysThreshold = DEFAULT_BACKFILL_NUM_KEYS_THRESHOLD;
 size_t BackfillDiskLoad::backfillMaxListSize = BACKFILL_MAX_LIST_SIZE;
 size_t BackfillDiskLoad::kvSleepTime = 0;
 std::set<int> BackfillDiskLoad::kvSleepEnable;
@@ -122,12 +123,13 @@ bool BackFillVisitor::visitBucket(RCPtr<VBucket> vb) {
             return true;
         }
         bool res = true;
-        residentRatioBelowThreshold =
-            ((numItems - numNonResident) / numItems) < backfillResidentThreshold ? true : false;
-        if (residentRatioBelowThreshold) {
+        bool residentRatioBelowThreshold = (((numItems - numNonResident) / numItems) < backfillResidentThreshold);
+        bool numKeysAboveThreshold = (numItems > backfillNumKeysThreshold);
+        if (residentRatioBelowThreshold || numKeysAboveThreshold) {
             // Perform check on the relevant KVStores to see if each one
             // has a separate dispatcher for disk backfill (WAL mode)
             int kvId = KVStoreMapper::getVBucketToKVId(vb);
+            bool vb0 = engine->getConfiguration().isVb0();
             bool useDiskBackfill = true;
             for (int i = 0; i < engine->getEpStore()->numKVStores; i++) {
                 i = kvId >= 0 ? kvId : i;
@@ -213,16 +215,20 @@ void BackFillVisitor::apply(void) {
     setEvents();
 }
 
-bool BackFillVisitor::setResidentItemThreshold(double residentThreshold) {
-    if (residentThreshold < MINIMUM_BACKFILL_RESIDENT_THRESHOLD) {
-        std::stringstream ss;
-        ss << "Resident item threshold " << residentThreshold
-           << " for memory backfill only is too low. Ignore this new threshold...";
-        getLogger()->log(EXTENSION_LOG_WARNING, NULL, ss.str().c_str());
-        return false;
-    }
+void BackFillVisitor::setResidentItemThreshold(double residentThreshold) {
     backfillResidentThreshold = residentThreshold;
-    return true;
+}
+
+double BackFillVisitor::getResidentItemThreshold() {
+    return backfillResidentThreshold;
+}
+
+void BackFillVisitor::setNumKeysThreshold(size_t numKeysThreshold) {
+    backfillNumKeysThreshold = numKeysThreshold;
+}
+
+size_t BackFillVisitor::getNumKeysThreshold() {
+    return backfillNumKeysThreshold;
 }
 
 void BackfillDiskLoad::setMaxListSize(size_t maxListSize) {
