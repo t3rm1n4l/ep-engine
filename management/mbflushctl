@@ -127,7 +127,9 @@ Available params for "set":
     kvstore_online            - Change kvstore state of the given kstore_id online
     kvstore_offline           - Change kvstore state of the given kvstore_id offline
     start_restore_vb          - Start restore mode for a vbucket
-    complete_restore_vb       - Stop restore mode for a vbucket""")
+    complete_restore_vb       - Stop restore mode for a vbucket
+    allocator_stats           - Print allocator stats
+    tap_throttle_persist_threshold - Persistence queue size threshold for tap throttle (Valid range 1M - 10)""")
 
     c.addCommand('stop', stop, 'stop')
     c.addCommand('start', start, 'start')
