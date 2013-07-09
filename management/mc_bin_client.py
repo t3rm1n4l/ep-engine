@@ -2,6 +2,7 @@
 """
 Binary memcached test client.
 
+Copyright (c) 2013 Zynga, Inc.
 Copyright (c) 2007  Dustin Sallings <dustin@spy.net>
 """
 

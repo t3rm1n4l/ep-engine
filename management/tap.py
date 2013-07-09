@@ -2,6 +2,7 @@
 """
 TAP protocol client library.
 
+Copyright (c) 2013 Zynga, Inc.
 Copyright (c) 2010  Dustin Sallings <dustin@spy.net>
 """
 

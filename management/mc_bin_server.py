@@ -2,6 +2,7 @@
 """
 A memcached test server.
 
+Copyright (c) 2013 Zynga, Inc.
 Copyright (c) 2007  Dustin Sallings <dustin@spy.net>
 """
 
