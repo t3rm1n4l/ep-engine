@@ -2,6 +2,7 @@
 """
 Example script for tap.py.
 
+Copyright 2013 Zynga Inc.
 Copyright (c) 2010  Dustin Sallings <dustin@spy.net>
 """
 
