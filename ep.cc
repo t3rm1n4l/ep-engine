@@ -924,7 +924,7 @@ ENGINE_ERROR_CODE EventuallyPersistentStore::setVBucketState(uint16_t vbid,
         uint16_t vb_new_version = vb_version == (std::numeric_limits<uint16_t>::max() - 1) ?
                                   0 : vb_version + 1;
 
-        if ((to == vbucket_state_active || to == vbucket_state_replica) &&
+        if ((to == vbucket_state_active || to == vbucket_state_replica || to == vbucket_state_pending) &&
                 (!stats.kvstoreMapVbuckets || assignKVStore(newvb))) {
             vbuckets.addBucket(newvb);
             vbuckets.setBucketVersion(vbid, vb_new_version);
@@ -932,6 +932,7 @@ ENGINE_ERROR_CODE EventuallyPersistentStore::setVBucketState(uint16_t vbid,
             scheduleVBSnapshot(Priority::VBucketPersistHighPriority,
                                KVStoreMapper::getVBucketToKVId(newvb));
         } else {
+            getLogger()->log(EXTENSION_LOG_WARNING, NULL, "Failed to set vbucket state for vbucket:%d (invalid state)", vbid);
             rv = ENGINE_EINVAL;
         }
     }
@@ -2518,7 +2519,7 @@ std::map<int, KVMapCapacity> EventuallyPersistentStore::getKVStoresCapacity() {
         vblist = getVBucketsForKVStore_UNLOCKED(kvId);
         for (it = vblist.begin(); it != vblist.end(); it++) {
             vb = vbuckets.getBucket(*it);
-            if (vb->getState() == vbucket_state_active) {
+            if (vb->getState() == vbucket_state_active || vb->getState() == vbucket_state_pending) {
                 kc.actives++;
             } else if (vb->getState() == vbucket_state_replica) {
                 kc.replicas++;
@@ -2539,7 +2540,8 @@ bool EventuallyPersistentStore::assignKVStore(RCPtr<VBucket> &vb, int kvid) {
     LockHolder lh(kvstoreMutex);
 
     if (kvid == -1) {
-        assert(vb->getState() == vbucket_state_active || vb->getState() == vbucket_state_replica);
+        assert(vb->getState() == vbucket_state_active || vb->getState() == vbucket_state_replica ||
+                vb->getState() == vbucket_state_pending);
         std::map<int, KVMapCapacity> cap = getKVStoresCapacity();
         kvid = KVStoreMapper::findKVStore(vb->getState(), kvstoresMap, rwUnderlying, cap);
     }

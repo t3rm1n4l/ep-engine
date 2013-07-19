@@ -51,7 +51,7 @@ public:
     static int findKVStore(vbucket_state_t state, std::map<int, std::vector<uint16_t> > &kvstoresMap,
             KVStore **kvstores, std::map<int, KVMapCapacity> &cap) {
 
-        assert(state == vbucket_state_active || state == vbucket_state_replica);
+        assert(state == vbucket_state_active || state == vbucket_state_replica || state == vbucket_state_pending);
         assert(instance != NULL);
         int eligibleKVStore(-1);
         size_t kvstoreSize(0), allocSize(0);
@@ -65,7 +65,7 @@ public:
                 KVMapCapacity kc = cap[(*it).first];
                 if (k->isAvailable()) {
                     size_t allocvbs;
-                    if (state == vbucket_state_active) {
+                    if (state == vbucket_state_active || vbucket_state_pending) {
                         allocvbs = kc.actives;
                     } else {
                         allocvbs = kc.replicas;
