@@ -49,10 +49,12 @@ class CliTool(object):
                     isinstance(e, socket.error) and e.errno == 32:
                 print >> sys.stderr, "Could not connect to %s:%d: " \
                     "Connection refused" % (host, port)
+                sys.exit(1)
             else:
                 raise
         except mc_bin_client.MemcachedError, e:
             print str(e)
+            sys.exit(1)
 
     def usage(self):
         cmds = sorted(c[1] for c in self.cmds.values())
