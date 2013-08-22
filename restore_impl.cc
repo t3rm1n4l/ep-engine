@@ -253,31 +253,36 @@ private:
      * callback to process the current item
      */
     void processEntry() throw(std::string) {
+        enum queue_operation op = queue_op_set;
         uint32_t exptime = sqlite3_column_int(statement, exp_idx);
-        if (exptime != 0 && exptime <  static_cast<int64_t>(ep_real_time())) {
-            ++expired;
-            return ;
-        }
         std::string key((const char*)sqlite3_column_text(statement, key_idx),
                         sqlite3_column_bytes(statement, key_idx));
 
-        enum queue_operation op = queue_op_set;
         if ((sqlite3_column_bytes(statement, op_idx) > 0) &&
             sqlite3_column_text(statement, op_idx)[0] == 'd') {
             op = queue_op_del;
         }
 
-        value_t value(Blob::New((const char*)sqlite3_column_text(statement,
-                                                                 val_idx),
-                                sqlite3_column_bytes(statement, val_idx)));
+        char const *val_bytes = NULL;
+        size_t val_len = 0;
 
+        if (exptime != 0 && exptime <  static_cast<int64_t>(ep_real_time())) {
+            ++expired;
+            // Mark expired item as deleted
+            op = queue_op_del;
+        } else {
+            val_bytes = (char const *) sqlite3_column_text(statement, val_idx);
+            val_len = sqlite3_column_bytes(statement, val_idx);
+        }
+
+        value_t value(Blob::New((char const *) val_bytes, val_len));
         uint16_t vbid =  (uint16_t)sqlite3_column_int(statement,
                                                       vbucket_id_idx);
         uint32_t flags = sqlite3_column_int(statement, flag_idx);
         time_t expiration = sqlite3_column_int(statement, exp_idx);
         uint64_t cas = sqlite3_column_int64(statement, cas_idx);
         std::string cksum(DI_CKSUM_DISABLED_STR);
-     
+
        if (user_version == WITH_CKSUM_VERSION) {
             if (sqlite3_column_bytes(statement, cksum_idx) == 0) { 
                   getLogger()->log(EXTENSION_LOG_DEBUG, NULL,

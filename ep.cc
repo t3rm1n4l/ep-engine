@@ -2295,10 +2295,13 @@ int EventuallyPersistentStore::restoreItem(Item &itm, enum queue_operation op)
     LockHolder rlh(restore.mutex);
     MutationValue mv;
     if (restore.itemsDeleted.find(key) == restore.itemsDeleted.end() &&
-        vb->ht.unlocked_restoreItem(itm, op, bucket_num, mv)) {
+        vb->ht.unlocked_restoreItem(itm, op, bucket_num)) {
         StoredValue *v = vb->ht.unlocked_find(itm.getKey(), bucket_num, true);
         assert(v);
-        if (!mv.wasDirty) {
+        // Add key into deleted list
+        if (op == queue_op_del) {
+            restore.itemsDeleted.insert(key);
+        } else {
             queueFlusher(vb, v);
         }
         return 0;

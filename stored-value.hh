@@ -1087,12 +1087,16 @@ public:
      */
     bool unlocked_restoreItem(Item &itm,
                               enum queue_operation op,
-                              int bucket_num,
-                              MutationValue &mv)
+                              int bucket_num)
     {
         if (unlocked_find(itm.getKey(), bucket_num, true)) {
             // it's already there...
             return false;
+        }
+
+        // If not already present, delete means noop
+        if (op == queue_op_del) {
+            return true;
         }
 
         StoredValue *v = valFact(itm, values[bucket_num], *this);
@@ -1100,9 +1104,6 @@ public:
         values[bucket_num] = v;
         ++numItems;
         ++stats.totalEvictable;
-        if (op == queue_op_del) {
-            unlocked_softDelete(itm.getKey(), itm.getCas(), bucket_num, mv);
-        }
         return true;
     }
 
