@@ -104,7 +104,7 @@ public:
     }
 
     void operator =(T *newValue) {
-        set(newValue);
+        ThreadLocal<T*>::set(newValue);
     }
 };
 

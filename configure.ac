@@ -14,6 +14,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
 AC_DISABLE_STATIC
 
+ac_cv_warnings_as_errors=no
 PANDORA_CANONICAL_TARGET(less-warnings, warnings-always-on, require-cxx,
                          force-gcc42)
 PANDORA_SHARED_PTR
